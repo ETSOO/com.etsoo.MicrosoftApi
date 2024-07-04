@@ -30,4 +30,9 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="com.etsoo.ApiModel" Version="1.0.55" />
+    <PackageReference Include="com.etsoo.HTTP" Version="1.0.50" />
+  </ItemGroup>
+
 </Project>
