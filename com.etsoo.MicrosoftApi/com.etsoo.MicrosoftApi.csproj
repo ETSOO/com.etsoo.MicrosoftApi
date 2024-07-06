@@ -15,7 +15,7 @@
     <Description>ETSOO Microsoft APIs
 亿速思维微软接口</Description>
     <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
     <AssemblyVersion>1.0.1.0</AssemblyVersion>
     <FileVersion>1.0.1.0</FileVersion>
     <PackageIcon>logo.png</PackageIcon>
@@ -32,8 +32,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="com.etsoo.ApiModel" Version="1.0.55" />
-    <PackageReference Include="com.etsoo.HTTP" Version="1.0.50" />
+    <PackageReference Include="com.etsoo.ApiModel" Version="1.0.56" />
+    <PackageReference Include="com.etsoo.HTTP" Version="1.0.51" />
   </ItemGroup>
 
 </Project>
