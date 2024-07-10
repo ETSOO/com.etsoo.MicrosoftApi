@@ -10,9 +10,10 @@ namespace com.etsoo.MicrosoftApi.Auth
         /// Create access token from authorization code
         /// 从授权码创建访问令牌
         /// </summary>
+        /// <param name="action">Request action</param>
         /// <param name="code">Authorization code</param>
         /// <returns>Token data</returns>
-        ValueTask<MicrosoftTokenData?> CreateTokenAsync(string code);
+        ValueTask<MicrosoftTokenData?> CreateTokenAsync(string action, string code);
 
         /// <summary>
         /// Get user info
@@ -36,7 +37,8 @@ namespace com.etsoo.MicrosoftApi.Auth
         /// </summary>
         /// <param name="request">Callback request</param>
         /// <param name="stateCallback">Callback to verify request state</param>
+        /// <param name="action">Request action</param>
         /// <returns>Action result & Token data</returns>
-        Task<(IActionResult result, MicrosoftTokenData? tokenData)> ValidateAuthAsync(HttpRequest request, Func<string, bool> stateCallback);
+        Task<(IActionResult result, MicrosoftTokenData? tokenData)> ValidateAuthAsync(HttpRequest request, Func<string, bool> stateCallback, string? action = null);
     }
 }

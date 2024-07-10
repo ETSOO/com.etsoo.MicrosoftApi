@@ -16,6 +16,8 @@ namespace com.etsoo.MicrosoftApi.Auth
     /// </summary>
     public class MicrosoftAuthClient : IMicrosoftAuthClient
     {
+        private const string SignScope = "openid profile email https://graph.microsoft.com/User.Read";
+
         private readonly HttpClient _client;
         private readonly MicrosoftAuthOptions _options;
         private readonly ILogger _logger;
@@ -39,32 +41,57 @@ namespace com.etsoo.MicrosoftApi.Auth
         }
 
         /// <summary>
+        /// Get sign in URL
+        /// 获取登录URL
+        /// </summary>
+        /// <param name="state">Request state</param>
+        /// <param name="loginHint">Login hint</param>
+        /// <returns>URL</returns>
+        public string GetSignInUrl(string state, string? loginHint = null)
+        {
+            return GetServerAuthUrl(AuthExtentions.SignInAction, state, SignScope, false, loginHint);
+        }
+
+        /// <summary>
+        /// Get sign up URL
+        /// 获取注册URL
+        /// </summary>
+        /// <param name="state">Request state</param>
+        /// <returns>URL</returns>
+        public string GetSignUpUrl(string state)
+        {
+            return GetServerAuthUrl(AuthExtentions.SignUpAction, state, SignScope);
+        }
+
+        /// <summary>
         /// Get server auth URL, for back-end processing
         /// 获取服务器授权URL，用于后端处理
         /// </summary>
+        /// <param name="action">Action of the request</param>
         /// <param name="state">Specifies any string value that your application uses to maintain state between your authorization request and the authorization server's response</param>
         /// <param name="scope">A space-delimited list of scopes that identify the resources that your application could access on the user's behalf</param>
         /// <param name="offline">Set to true if your application needs to refresh access tokens when the user is not present at the browser</param>
         /// <param name="loginHint">Set the parameter value to an email address or sub identifier, which is equivalent to the user's Microsoft ID</param>
         /// <returns>URL</returns>
-        public string GetServerAuthUrl(string state, string scope, bool offline = false, string? loginHint = null)
+        public string GetServerAuthUrl(string action, string state, string scope, bool offline = false, string? loginHint = null)
         {
             if (offline) scope += " offline_access";
 
-            return GetAuthUrl(_options.ServerRedirectUrl, "code", scope, state, loginHint);
+            return GetAuthUrl($"{_options.ServerRedirectUrl}/{action}", "code", scope, state, loginHint);
         }
 
         /// <summary>
         /// Get script auth URL, for front-end page
         /// 获取脚本授权URL，用于前端页面
         /// </summary>
+        /// <param name="action">Action of the request</param>
         /// <param name="state">Specifies any string value that your application uses to maintain state between your authorization request and the authorization server's response</param>
         /// <param name="scope">A space-delimited list of scopes that identify the resources that your application could access on the user's behalf</param>
         /// <param name="loginHint">Set the parameter value to an email address or sub identifier, which is equivalent to the user's Microsoft ID</param>
         /// <returns>URL</returns>
-        public string GetScriptAuthUrl(string state, string scope, string? loginHint = null)
+        public string GetScriptAuthUrl(string action, string state, string scope, string? loginHint = null)
         {
-            return GetAuthUrl(_options.ScriptRedirectUrl, "token", scope, state, loginHint);
+            return GetAuthUrl($"{_options.ScriptRedirectUrl}/{action}", "token", scope, state, loginHint);
         }
 
         /// <summary>
@@ -93,6 +120,7 @@ namespace com.etsoo.MicrosoftApi.Auth
         /// Get auth URL
         /// 获取授权URL
         /// </summary>
+        /// <param name="action">Request action</param>
         /// <param name="redirectUrl">The value must exactly match one of the authorized redirect URIs for the OAuth 2.0 client, which you configured in your client's API Console</param>
         /// <param name="responseType">Set the parameter value to 'code' for web server applications or 'token' for SPA</param>
         /// <param name="scope">A space-delimited list of scopes that identify the resources that your application could access on the user's behalf</param>
@@ -100,7 +128,7 @@ namespace com.etsoo.MicrosoftApi.Auth
         /// <param name="loginHint">Set the parameter value to an email address or sub identifier, which is equivalent to the user's Microsoft ID</param>
         /// <returns>URL</returns>
         /// <exception cref="ArgumentNullException">Parameter 'redirectUrl' is required</exception>
-        public async ValueTask<MicrosoftTokenData?> CreateTokenAsync(string code)
+        public async ValueTask<MicrosoftTokenData?> CreateTokenAsync(string action, string code)
         {
             if (string.IsNullOrEmpty(_options.ServerRedirectUrl))
             {
@@ -168,10 +196,11 @@ namespace com.etsoo.MicrosoftApi.Auth
         /// </summary>
         /// <param name="request">Callback request</param>
         /// <param name="state">Request state</param>
+        /// <param name="action">Request action</param>
         /// <returns>Action result & user information</returns>
-        public ValueTask<(IActionResult result, AuthUserInfo? userInfo)> GetUserInfoAsync(HttpRequest request, string state)
+        public ValueTask<(IActionResult result, AuthUserInfo? userInfo)> GetUserInfoAsync(HttpRequest request, string state, string? action = null)
         {
-            return GetUserInfoAsync(request, s => s == state);
+            return GetUserInfoAsync(request, s => s == state, action);
         }
 
         /// <summary>
@@ -180,10 +209,11 @@ namespace com.etsoo.MicrosoftApi.Auth
         /// </summary>
         /// <param name="request">Callback request</param>
         /// <param name="stateCallback">Callback to verify request state</param>
+        /// <param name="action">Request action</param>
         /// <returns>Action result & user information</returns>
-        public async ValueTask<(IActionResult result, AuthUserInfo? userInfo)> GetUserInfoAsync(HttpRequest request, Func<string, bool> stateCallback)
+        public async ValueTask<(IActionResult result, AuthUserInfo? userInfo)> GetUserInfoAsync(HttpRequest request, Func<string, bool> stateCallback, string? action = null)
         {
-            var (result, tokenData) = await ValidateAuthAsync(request, stateCallback);
+            var (result, tokenData) = await ValidateAuthAsync(request, stateCallback, action);
             AuthUserInfo? userInfo = null;
             if (result.Ok && tokenData != null)
             {
@@ -220,8 +250,9 @@ namespace com.etsoo.MicrosoftApi.Auth
         /// </summary>
         /// <param name="request">Callback request</param>
         /// <param name="stateCallback">Callback to verify request state</param>
+        /// <param name="action">Request action</param>
         /// <returns>Action result & Token data</returns>
-        public async Task<(IActionResult result, MicrosoftTokenData? tokenData)> ValidateAuthAsync(HttpRequest request, Func<string, bool> stateCallback)
+        public async Task<(IActionResult result, MicrosoftTokenData? tokenData)> ValidateAuthAsync(HttpRequest request, Func<string, bool> stateCallback, string? action = null)
         {
             IActionResult result;
             MicrosoftTokenData? tokenData = null;
@@ -257,7 +288,8 @@ namespace com.etsoo.MicrosoftApi.Auth
                 {
                     try
                     {
-                        tokenData = await CreateTokenAsync(code);
+                        action ??= request.GetRequestAction();
+                        tokenData = await CreateTokenAsync(action, code);
                         if (tokenData == null)
                         {
                             result = new ActionResult
