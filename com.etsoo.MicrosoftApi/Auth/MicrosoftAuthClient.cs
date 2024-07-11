@@ -117,18 +117,14 @@ namespace com.etsoo.MicrosoftApi.Auth
         }
 
         /// <summary>
-        /// Get auth URL
-        /// 获取授权URL
+        /// Create access token from authorization code
+        /// 从授权码创建访问令牌
         /// </summary>
         /// <param name="action">Request action</param>
-        /// <param name="redirectUrl">The value must exactly match one of the authorized redirect URIs for the OAuth 2.0 client, which you configured in your client's API Console</param>
-        /// <param name="responseType">Set the parameter value to 'code' for web server applications or 'token' for SPA</param>
-        /// <param name="scope">A space-delimited list of scopes that identify the resources that your application could access on the user's behalf</param>
-        /// <param name="state">Specifies any string value that your application uses to maintain state between your authorization request and the authorization server's response</param>
-        /// <param name="loginHint">Set the parameter value to an email address or sub identifier, which is equivalent to the user's Microsoft ID</param>
-        /// <returns>URL</returns>
-        /// <exception cref="ArgumentNullException">Parameter 'redirectUrl' is required</exception>
-        public async ValueTask<MicrosoftTokenData?> CreateTokenAsync(string action, string code)
+        /// <param name="code">Authorization code</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Token data</returns>
+        public async ValueTask<MicrosoftTokenData?> CreateTokenAsync(string action, string code, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrEmpty(_options.ServerRedirectUrl))
             {
@@ -143,11 +139,11 @@ namespace com.etsoo.MicrosoftApi.Auth
                 ["client_secret"] = _options.ClientSecret,
                 ["redirect_uri"] = _options.ServerRedirectUrl,
                 ["grant_type"] = "authorization_code"
-            }));
+            }), cancellationToken);
 
             response.EnsureSuccessStatusCode();
 
-            return await response.Content.ReadFromJsonAsync(MicrosoftAuthJsonSerializerContext.Default.MicrosoftTokenData);
+            return await response.Content.ReadFromJsonAsync(MicrosoftAuthJsonSerializerContext.Default.MicrosoftTokenData, cancellationToken);
         }
 
         /// <summary>
@@ -155,8 +151,9 @@ namespace com.etsoo.MicrosoftApi.Auth
         /// 用刷新令牌获取访问令牌
         /// </summary>
         /// <param name="refreshToken">Refresh token</param>
+        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
-        public async Task<MicrosoftRefreshTokenData?> RefreshTokenAsync(string refreshToken)
+        public async Task<MicrosoftRefreshTokenData?> RefreshTokenAsync(string refreshToken, CancellationToken cancellationToken = default)
         {
             var api = $"{_authority}/oauth2/v2.0/token";
             var response = await _client.PostAsync(api, new FormUrlEncodedContent(new Dictionary<string, string>
@@ -165,11 +162,11 @@ namespace com.etsoo.MicrosoftApi.Auth
                 ["client_secret"] = _options.ClientSecret,
                 ["refresh_token"] = refreshToken,
                 ["grant_type"] = "refresh_token"
-            }));
+            }), cancellationToken);
 
             response.EnsureSuccessStatusCode();
 
-            return await response.Content.ReadFromJsonAsync(MicrosoftAuthJsonSerializerContext.Default.MicrosoftRefreshTokenData);
+            return await response.Content.ReadFromJsonAsync(MicrosoftAuthJsonSerializerContext.Default.MicrosoftRefreshTokenData, cancellationToken);
         }
 
         /// <summary>
@@ -177,17 +174,18 @@ namespace com.etsoo.MicrosoftApi.Auth
         /// 获取用户信息
         /// </summary>
         /// <param name="tokenData">Token data</param>
+        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Result</returns>
-        public async ValueTask<MicrosoftUserInfo?> GetUserInfoAsync(MicrosoftTokenData tokenData)
+        public async ValueTask<MicrosoftUserInfo?> GetUserInfoAsync(MicrosoftTokenData tokenData, CancellationToken cancellationToken = default)
         {
             // Not like Google, currently the Id Token does not include all user information
 
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(tokenData.TokenType, tokenData.AccessToken);
 
-            var response = await _client.GetAsync($"https://graph.microsoft.com/oidc/userinfo");
+            var response = await _client.GetAsync($"https://graph.microsoft.com/oidc/userinfo", cancellationToken);
             response.EnsureSuccessStatusCode();
 
-            return await response.Content.ReadFromJsonAsync(MicrosoftAuthJsonSerializerContext.Default.MicrosoftUserInfo);
+            return await response.Content.ReadFromJsonAsync(MicrosoftAuthJsonSerializerContext.Default.MicrosoftUserInfo, cancellationToken);
         }
 
         /// <summary>
@@ -197,10 +195,11 @@ namespace com.etsoo.MicrosoftApi.Auth
         /// <param name="request">Callback request</param>
         /// <param name="state">Request state</param>
         /// <param name="action">Request action</param>
+        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Action result & user information</returns>
-        public ValueTask<(IActionResult result, AuthUserInfo? userInfo)> GetUserInfoAsync(HttpRequest request, string state, string? action = null)
+        public ValueTask<(IActionResult result, AuthUserInfo? userInfo)> GetUserInfoAsync(HttpRequest request, string state, string? action = null, CancellationToken cancellationToken = default)
         {
-            return GetUserInfoAsync(request, s => s == state, action);
+            return GetUserInfoAsync(request, s => s == state, action, cancellationToken);
         }
 
         /// <summary>
@@ -210,14 +209,15 @@ namespace com.etsoo.MicrosoftApi.Auth
         /// <param name="request">Callback request</param>
         /// <param name="stateCallback">Callback to verify request state</param>
         /// <param name="action">Request action</param>
+        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Action result & user information</returns>
-        public async ValueTask<(IActionResult result, AuthUserInfo? userInfo)> GetUserInfoAsync(HttpRequest request, Func<string, bool> stateCallback, string? action = null)
+        public async ValueTask<(IActionResult result, AuthUserInfo? userInfo)> GetUserInfoAsync(HttpRequest request, Func<string, bool> stateCallback, string? action = null, CancellationToken cancellationToken = default)
         {
-            var (result, tokenData) = await ValidateAuthAsync(request, stateCallback, action);
+            var (result, tokenData) = await ValidateAuthAsync(request, stateCallback, action, cancellationToken);
             AuthUserInfo? userInfo = null;
             if (result.Ok && tokenData != null)
             {
-                var data = await GetUserInfoAsync(tokenData);
+                var data = await GetUserInfoAsync(tokenData, cancellationToken);
                 if (data == null)
                 {
                     result = new ActionResult
@@ -251,8 +251,9 @@ namespace com.etsoo.MicrosoftApi.Auth
         /// <param name="request">Callback request</param>
         /// <param name="stateCallback">Callback to verify request state</param>
         /// <param name="action">Request action</param>
+        /// <param name="cancellationToken">Cancellation token</param>
         /// <returns>Action result & Token data</returns>
-        public async Task<(IActionResult result, MicrosoftTokenData? tokenData)> ValidateAuthAsync(HttpRequest request, Func<string, bool> stateCallback, string? action = null)
+        public async Task<(IActionResult result, MicrosoftTokenData? tokenData)> ValidateAuthAsync(HttpRequest request, Func<string, bool> stateCallback, string? action = null, CancellationToken cancellationToken = default)
         {
             IActionResult result;
             MicrosoftTokenData? tokenData = null;
@@ -289,7 +290,7 @@ namespace com.etsoo.MicrosoftApi.Auth
                     try
                     {
                         action ??= request.GetRequestAction();
-                        tokenData = await CreateTokenAsync(action, code);
+                        tokenData = await CreateTokenAsync(action, code, cancellationToken);
                         if (tokenData == null)
                         {
                             result = new ActionResult
