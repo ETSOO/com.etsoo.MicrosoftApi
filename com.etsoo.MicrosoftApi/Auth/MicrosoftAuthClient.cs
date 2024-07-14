@@ -137,7 +137,7 @@ namespace com.etsoo.MicrosoftApi.Auth
                 ["code"] = code,
                 ["client_id"] = _options.ClientId,
                 ["client_secret"] = _options.ClientSecret,
-                ["redirect_uri"] = _options.ServerRedirectUrl,
+                ["redirect_uri"] = $"{_options.ServerRedirectUrl}/{action}",
                 ["grant_type"] = "authorization_code"
             }), cancellationToken);
 
