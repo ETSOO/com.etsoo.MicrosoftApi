@@ -41,15 +41,15 @@ namespace com.etsoo.MicrosoftApi.Auth
         }
 
         /// <summary>
-        /// Get sign in URL
+        /// Get log in URL
         /// 获取登录URL
         /// </summary>
         /// <param name="state">Request state</param>
         /// <param name="loginHint">Login hint</param>
         /// <returns>URL</returns>
-        public string GetSignInUrl(string state, string? loginHint = null)
+        public string GetLogInUrl(string state, string? loginHint = null)
         {
-            return GetServerAuthUrl(AuthExtentions.SignInAction, state, SignScope, false, loginHint);
+            return GetServerAuthUrl(AuthExtentions.LogInAction, state, SignScope, false, loginHint);
         }
 
         /// <summary>
