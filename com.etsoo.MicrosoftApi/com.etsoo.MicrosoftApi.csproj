@@ -1,21 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>..\etsoo.snk</AssemblyOriginatorKeyFile>
     <RepositoryType>Git</RepositoryType>
     <RepositoryUrl>https://github.com/ETSOO/com.etsoo.MicrosoftApi/com.etsoo.MicrosoftApi</RepositoryUrl>
-    <Authors>ETSOO SmartERP NextGen Team</Authors>
+    <Authors>ETSOO</Authors>
     <Company>ETSOO / 亿速思维</Company>
-    <Copyright>Copyright © ETSOO 2004 - 2024</Copyright>
+    <Copyright>Copyright © ETSOO 2004 - 2026</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Description>ETSOO Microsoft APIs
 亿速思维微软接口</Description>
     <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
-    <Version>1.0.11</Version>
+    <Version>1.0.12</Version>
     <AssemblyVersion>1.0.1.0</AssemblyVersion>
     <FileVersion>1.0.1.0</FileVersion>
     <PackageIcon>logo.png</PackageIcon>
@@ -32,8 +32,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="com.etsoo.ApiModel" Version="1.0.67" />
-    <PackageReference Include="com.etsoo.HTTP" Version="1.0.58" />
+    <PackageReference Include="com.etsoo.ApiModel" Version="1.0.83" />
+    <PackageReference Include="com.etsoo.HTTP" Version="1.0.94" />
   </ItemGroup>
 
 </Project>
